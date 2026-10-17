@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<title>カウンター</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #222;
+    --bar: #000;
+    --sub: #444;
+    --muted: #6b8090;
+    --accent: #ff8c00;
+    --num: #2196f3;
+    --text: #fff;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif; }
+  body { min-height: 100vh; padding-bottom: env(safe-area-inset-bottom); }
+  button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; padding: 0; }
+  svg.icon { width: 28px; height: 28px; fill: currentColor; display: block; }
+
+  header { background: var(--bar); display: flex; align-items: center; justify-content: space-between;
+    padding: calc(env(safe-area-inset-top) + 12px) 16px 12px; }
+  header h1 { margin: 0; font-size: 20px; color: #ccc; font-weight: 700; }
+  header .actions { display: flex; gap: 18px; color: #ccc; }
+
+  .tabbar { background: var(--sub); padding: 8px 16px 0; }
+  .tab { display: inline-flex; align-items: center; gap: 8px; background: var(--bar); color: #ffc107;
+    padding: 10px 24px; border-radius: 16px 16px 0 0; border-bottom: 3px solid #e53935; font-weight: 700; font-size: 18px; }
+  .tab .check { width: 22px; height: 22px; border-radius: 50%; background: #e53935; display: grid; place-items: center; }
+
+  .toolbar { display: flex; justify-content: flex-end; gap: 22px; padding: 14px 16px; color: var(--muted); }
+  .toolbar button.active { color: var(--accent); }
+
+  main { padding: 0 6px 24px; max-width: 720px; margin: 0 auto; }
+
+  /* ---------- Counter list ---------- */
+  .counters { display: grid; gap: 10px; }
+  .counters.grid { grid-template-columns: 1fr 1fr; }
+  .card { position: relative; border-radius: 999px; padding: 10px 14px; display: grid;
+    grid-template-columns: auto 1fr auto; align-items: center; gap: 6px; min-height: 120px;
+    box-shadow: inset 0 0 0 3px rgba(255,255,255,.25); user-select: none; }
+  .card .reset { position: absolute; left: 13%; top: 8px; opacity: .75; }
+  .card .reset svg { width: 30px; height: 30px; }
+  .card .name { grid-column: 2; text-align: center; font-weight: 800; font-size: 22px; letter-spacing: 1px; margin-top: -4px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card .mid { display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 0; }
+  .card .value { font-family: "Orbitron", monospace; font-weight: 900; font-size: 44px; line-height: 1.1; }
+  .card .btn { border-radius: 50%; display: grid; place-items: center; opacity: .8; transition: transform .08s; }
+  .card .btn:active { transform: scale(.9); }
+  .card .minus { width: 60px; height: 60px; border: 5px solid currentColor; margin-top: 26px; }
+  .card .plus { width: 92px; height: 92px; border: 8px solid currentColor; }
+  .card .btn span { display: block; background: currentColor; border-radius: 3px; }
+  .card .minus span { width: 28px; height: 5px; }
+  .card .plus span { width: 46px; height: 8px; position: relative; }
+  .card .plus span::after { content: ""; position: absolute; left: 50%; top: 50%; width: 8px; height: 46px;
+    background: currentColor; border-radius: 3px; transform: translate(-50%, -50%); }
+  .counters.grid .card { border-radius: 28px; grid-template-columns: 1fr 1fr; grid-template-rows: auto auto auto; min-height: 0; padding: 12px; }
+  .counters.grid .card .reset { left: 12px; top: 10px; }
+  .counters.grid .card .mid { grid-column: 1 / 3; }
+  .counters.grid .card .name { font-size: 18px; margin: 0 0 0 26px; }
+  .counters.grid .card .value { font-size: 38px; }
+  .counters.grid .card .minus { margin: 0; justify-self: center; width: 52px; height: 52px; }
+  .counters.grid .card .plus { justify-self: center; width: 64px; height: 64px; border-width: 6px; grid-row: 2; grid-column: 2; }
+  .counters.grid .card .minus { grid-row: 2; grid-column: 1; align-self: center; }
+  .counters.grid .card .mid { grid-row: 1; }
+  .counters.grid .card .plus span { width: 30px; height: 6px; }
+  .counters.grid .card .plus span::after { width: 6px; height: 30px; }
+
+  /* ---------- Chart ---------- */
+  .chart-head { display: flex; align-items: center; gap: 24px; padding: 4px 12px 8px; color: var(--muted); }
+  .chart-head button.active { color: var(--accent); }
+  .chart-head .total { margin-left: auto; font-size: 22px; font-weight: 700; }
+  .chart-head .total b { color: var(--num); }
+  .chart-box { display: grid; place-items: center; padding: 8px 0 16px; }
+  .chart-box svg { width: 100%; max-width: 420px; height: auto; overflow: visible; }
+  .chart-box text { font-family: inherit; font-weight: 700; }
+  .legend { border-top: 1px solid var(--sub); padding-top: 10px; display: grid; gap: 8px; }
+  .legend .row { display: flex; align-items: center; gap: 10px; border: 1px solid var(--sub); border-radius: 14px;
+    padding: 12px 14px; font-size: 20px; font-weight: 700; color: #8a9aa6; }
+  .legend .dot { width: 16px; height: 16px; border-radius: 50%; flex: none; }
+  .legend b { color: var(--num); }
+  .empty { color: var(--muted); padding: 60px 0; text-align: center; }
+
+  /* ---------- Settings ---------- */
+  .settings { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; padding: 0 10px; }
+  .settings .row { display: flex; gap: 10px; align-items: center; background: #2c2c2c; padding: 10px; border-radius: 14px; }
+  .settings input[type=text] { flex: 1; min-width: 0; width: 0; font: inherit; font-size: 18px; background: #111; color: #fff;
+    border: 1px solid var(--sub); border-radius: 10px; padding: 10px; }
+  .settings input[type=color] { width: 48px; height: 44px; border: 0; background: none; padding: 0; }
+  .settings input[type=number] { width: 90px; font: inherit; font-size: 18px; background: #111; color: #fff;
+    border: 1px solid var(--sub); border-radius: 10px; padding: 10px; }
+  .settings .danger { margin-top: 10px; padding: 14px; border-radius: 14px; background: #b71c1c; font-weight: 700; font-size: 17px; }
+  .settings h2 { font-size: 15px; color: var(--muted); margin: 12px 4px 0; font-weight: 600; }
+</style>
+</head>
+<body>
+<header>
+  <h1>カウンター</h1>
+  <div class="actions">
+    <button id="csvBtn" title="CSV出力" aria-label="CSV出力">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M5 20h14v-2H5v2zm7-18-5.5 5.5h3.5V14h4V7.5h3.5L12 2z" transform="rotate(180 12 11)"/></svg>
+    </button>
+  </div>
+</header>
+<div class="tabbar"><span class="tab"><span class="check"><svg viewBox="0 0 24 24" width="16" height="16" fill="#fff"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg></span><span id="groupName">新しいグループ</span></span></div>
+
+<nav class="toolbar">
+  <button data-view="list" title="リスト" aria-label="リスト表示"><svg class="icon" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg></button>
+  <button data-view="grid" title="グリッド" aria-label="グリッド表示"><svg class="icon" viewBox="0 0 24 24"><path d="M3 3h8v8H3zm10 0h8v8h-8zM3 13h8v8H3zm10 0h8v8h-8z"/></svg></button>
+  <button data-view="chart" title="グラフ" aria-label="グラフ表示"><svg class="icon" viewBox="0 0 24 24"><path d="M11 2v20c-5.07-.5-9-4.79-9-10s3.93-9.5 9-10zm2.03 0v8.99H22c-.47-4.74-4.24-8.52-8.97-8.99zm0 11.01V22c4.74-.47 8.5-4.25 8.97-8.99h-8.97z"/></svg></button>
+  <button data-view="settings" title="設定" aria-label="設定"><svg class="icon" viewBox="0 0 24 24"><path d="M19.14 12.94a7.07 7.07 0 0 0 0-1.88l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.61-.22l-2.39.96a7 7 0 0 0-1.62-.94l-.36-2.54A.49.49 0 0 0 13.9 2h-3.84a.49.49 0 0 0-.49.42l-.36 2.54c-.59.24-1.13.56-1.62.94l-2.39-.96a.5.5 0 0 0-.61.22L2.67 8.48a.49.49 0 0 0 .12.64l2.03 1.58a7.07 7.07 0 0 0 0 1.88l-2.03 1.58a.5.5 0 0 0-.12.64l1.92 3.32c.12.22.37.3.61.22l2.39-.96c.49.38 1.03.7 1.62.94l.36 2.54c.05.24.25.42.49.42h3.84c.24 0 .44-.18.49-.42l.36-2.54a7 7 0 0 0 1.62-.94l2.39.96c.24.08.49 0 .61-.22l1.92-3.32a.5.5 0 0 0-.12-.64l-2.03-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/></svg></button>
+</nav>
+
+<main id="app"></main>
+
+<script>
+const STORAGE_KEY = "counter-app-v1";
+const DEFAULTS = {
+  group: "新しいグループ",
+  view: "list",
+  chartType: "pie",
+  showPercent: true,
+  items: [
+    { name: "EV1", color: "#8e24aa", value: 0 },
+    { name: "EV2", color: "#ff8c00", value: 0 },
+    { name: "EV3", color: "#558b2f", value: 0 },
+    { name: "EV4", color: "#1e88e5", value: 0 },
+    { name: "EV5", color: "#d81b60", value: 0 },
+  ],
+};
+
+let state = load();
+
+function load() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if (saved && Array.isArray(saved.items)) return { ...structuredClone(DEFAULTS), ...saved };
+  } catch (e) {}
+  return structuredClone(DEFAULTS);
+}
+function save() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
+}
+
+const app = document.getElementById("app");
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const total = () => state.items.reduce((s, it) => s + it.value, 0);
+
+function vibrate() { if (navigator.vibrate) navigator.vibrate(10); }
+
+function render() {
+  document.getElementById("groupName").textContent = state.group;
+  document.querySelectorAll(".toolbar button").forEach(b => b.classList.toggle("active", b.dataset.view === state.view));
+  if (state.view === "chart") renderChart();
+  else if (state.view === "settings") renderSettings();
+  else renderCounters();
+}
+
+function renderCounters() {
+  const resetIcon = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3a9 9 0 1 1-9 9h2.2A6.8 6.8 0 1 0 12 5.2V8L7.5 4.2 12 .5V3z"/><circle cx="12" cy="12" r="3.2"/></svg>`;
+  app.innerHTML = `<div class="counters ${state.view === "grid" ? "grid" : ""}">` +
+    state.items.map((it, i) => `
+      <div class="card" style="background:${it.color};color:#fff">
+        <button class="reset" data-act="reset" data-i="${i}" aria-label="${esc(it.name)}をリセット">${resetIcon}</button>
+        <button class="btn minus" data-act="dec" data-i="${i}" aria-label="${esc(it.name)}を減らす"><span></span></button>
+        <div class="mid">
+          <div class="name">${esc(it.name)}</div>
+          <div class="value">${it.value}</div>
+        </div>
+        <button class="btn plus" data-act="inc" data-i="${i}" aria-label="${esc(it.name)}を増やす"><span></span></button>
+      </div>`).join("") + `</div>`;
+}
+
+app.addEventListener("click", e => {
+  const b = e.target.closest("[data-act]");
+  if (!b) return;
+  const i = +b.dataset.i;
+  const it = state.items[i];
+  switch (b.dataset.act) {
+    case "inc": it.value++; vibrate(); break;
+    case "dec": if (it.value > 0) it.value--; vibrate(); break;
+    case "reset": if (confirm(`${it.name} を 0 にリセットしますか？`)) it.value = 0; else return; break;
+    case "chartType": state.chartType = b.dataset.type; break;
+    case "togglePct": state.showPercent = !state.showPercent; break;
+    case "resetAll": if (!confirm("全ての項目を 0 にリセットしますか？")) return; state.items.forEach(x => x.value = 0); break;
+    default: return;
+  }
+  save(); render();
+});
+
+function polar(cx, cy, r, a) { return [cx + r * Math.cos(a), cy + r * Math.sin(a)]; }
+
+function pieSVG() {
+  const t = total();
+  const S = 400, c = S / 2, R = 190, r = 48;
+  let a = -Math.PI / 2, paths = "", labels = "";
+  const nonzero = state.items.filter(it => it.value > 0);
+  state.items.forEach(it => {
+    if (!it.value) return;
+    const frac = it.value / t, a2 = a + frac * Math.PI * 2;
+    if (nonzero.length === 1) {
+      paths += `<circle cx="${c}" cy="${c}" r="${R}" fill="${it.color}"/>`;
+    } else {
+      const [x1, y1] = polar(c, c, R, a), [x2, y2] = polar(c, c, R, a2);
+      paths += `<path d="M${c},${c} L${x1},${y1} A${R},${R} 0 ${frac > .5 ? 1 : 0} 1 ${x2},${y2} Z" fill="${it.color}"/>`;
+    }
+    if (frac >= 0.03) {
+      const [lx, ly] = polar(c, c, (R + r) / 2 + 10, (a + a2) / 2);
+      const txt = state.showPercent ? (frac * 100).toFixed(1) + "%" : it.value;
+      const w = String(txt).length * 11 + 8;
+      labels += `<rect x="${lx - w / 2}" y="${ly - 14}" width="${w}" height="26" fill="rgba(255,255,255,.3)"/>
+        <text x="${lx}" y="${ly + 6}" text-anchor="middle" font-size="18" fill="#000">${txt}</text>`;
+    }
+    a = a2;
+  });
+  return `<svg viewBox="0 0 ${S} ${S}" role="img" aria-label="円グラフ">${paths}${labels}
+    <circle cx="${c}" cy="${c}" r="${r}" fill="var(--bg)"/>
+    <text x="${c}" y="${c + 14}" text-anchor="middle" font-size="40" fill="var(--muted)">${state.showPercent ? "%" : "#"}</text></svg>`;
+}
+
+function barSVG() {
+  const t = total();
+  const W = 400, H = 320, pad = { l: 8, r: 8, t: 30, b: 34 };
+  const max = Math.max(...state.items.map(it => it.value), 1);
+  const n = state.items.length, slot = (W - pad.l - pad.r) / n, bw = slot * 0.62;
+  const ch = H - pad.t - pad.b;
+  let out = `<line x1="${pad.l}" x2="${W - pad.r}" y1="${H - pad.b}" y2="${H - pad.b}" stroke="#555"/>`;
+  state.items.forEach((it, i) => {
+    const h = (it.value / max) * ch, x = pad.l + slot * i + (slot - bw) / 2, y = H - pad.b - h;
+    const txt = state.showPercent ? (t ? (it.value / t * 100).toFixed(1) : "0.0") + "%" : it.value;
+    out += `<rect x="${x}" y="${y}" width="${bw}" height="${h}" rx="4" fill="${it.color}"/>
+      <text x="${x + bw / 2}" y="${y - 8}" text-anchor="middle" font-size="16" fill="#ddd">${txt}</text>
+      <text x="${x + bw / 2}" y="${H - pad.b + 24}" text-anchor="middle" font-size="16" fill="#8a9aa6">${esc(it.name)}</text>`;
+  });
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="棒グラフ">${out}</svg>`;
+}
+
+function renderChart() {
+  const t = total();
+  const pieIcon = `<svg class="icon" viewBox="0 0 24 24" style="fill:none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9.5"/><path d="M12 2.5v19M12 12h9.5"/></svg>`;
+  const barIcon = `<svg class="icon" viewBox="0 0 24 24"><path d="M4 10h4v10H4zm6-6h4v16h-4zm6 9h4v7h-4z"/></svg>`;
+  const pctIcon = `<svg class="icon" viewBox="0 0 24 24"><path d="M7.5 11a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7zm0-2a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zm9 11a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7zm0-2a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM5.4 19.2 17.2 3.8l1.6 1.2L7 20.4z"/></svg>`;
+  app.innerHTML = `
+    <div class="chart-head">
+      <button data-act="chartType" data-type="pie" class="${state.chartType === "pie" ? "active" : ""}" aria-label="円グラフ">${pieIcon}</button>
+      <button data-act="chartType" data-type="bar" class="${state.chartType === "bar" ? "active" : ""}" aria-label="棒グラフ">${barIcon}</button>
+      <button data-act="togglePct" class="${state.showPercent ? "active" : ""}" aria-label="パーセント表示切替">${pctIcon}</button>
+      <div class="total">合計: <b>${t}</b></div>
+    </div>
+    <div class="chart-box">${t === 0 ? `<div class="empty">まだカウントがありません</div>` : (state.chartType === "pie" ? pieSVG() : barSVG())}</div>
+    <div class="legend">${state.items.map(it => `
+      <div class="row"><span class="dot" style="background:${it.color}"></span>
+        <span>${esc(it.name)}: <b>${it.value}</b>&nbsp;&nbsp;(${t ? (it.value / t * 100).toFixed(2) : "0.00"}%)</span></div>`).join("")}
+    </div>`;
+}
+
+function renderSettings() {
+  app.innerHTML = `
+    <div class="settings">
+      <h2>グループ名</h2>
+      <div class="row"><input type="text" data-field="group" value="${esc(state.group)}"></div>
+      <h2>項目（名前・色・値）</h2>
+      ${state.items.map((it, i) => `
+        <div class="row">
+          <input type="color" data-field="color" data-i="${i}" value="${it.color}">
+          <input type="text" data-field="name" data-i="${i}" value="${esc(it.name)}" maxlength="20">
+          <input type="number" data-field="value" data-i="${i}" value="${it.value}" min="0" inputmode="numeric">
+        </div>`).join("")}
+      <button class="danger" data-act="resetAll">全てリセット</button>
+    </div>`;
+}
+
+app.addEventListener("input", e => {
+  const f = e.target.dataset.field;
+  if (!f) return;
+  if (f === "group") state.group = e.target.value || DEFAULTS.group;
+  else {
+    const it = state.items[+e.target.dataset.i];
+    if (f === "value") it.value = Math.max(0, parseInt(e.target.value, 10) || 0);
+    else it[f] = e.target.value;
+  }
+  document.getElementById("groupName").textContent = state.group;
+  save();
+});
+
+document.querySelector(".toolbar").addEventListener("click", e => {
+  const b = e.target.closest("button[data-view]");
+  if (!b) return;
+  state.view = b.dataset.view;
+  save(); render();
+});
+
+document.getElementById("csvBtn").addEventListener("click", () => {
+  const t = total();
+  const q = s => `"${String(s).replace(/"/g, '""')}"`;
+  const rows = [["項目", "カウント", "割合(%)"],
+    ...state.items.map(it => [it.name, it.value, t ? (it.value / t * 100).toFixed(2) : "0.00"]),
+    ["合計", t, "100.00"]];
+  const csv = "﻿" + rows.map(r => r.map(q).join(",")).join("\r\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+  a.download = `${state.group}_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+
+render();
+</script>
+</body>
+</html>
